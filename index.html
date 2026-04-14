@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANIFLUX | Premium Anime Streaming</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --accent: #e50914; --bg: #000000; --card: #141414; }
+        body { background-color: var(--bg); color: white; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; overflow-x: hidden; }
+        .netflix-gradient { background: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 100%); }
+        .glass { background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(10px); }
+        .anime-card:hover img { transform: scale(1.05); }
+        .custom-scroll::-webkit-scrollbar { width: 5px; }
+        .custom-scroll::-webkit-scrollbar-track { background: #141414; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <nav class="fixed top-0 w-full z-50 transition-all duration-300 px-4 py-4 flex justify-between items-center glass" id="navbar">
+        <div class="flex items-center gap-8">
+            <h1 class="text-3xl font-black text-red-600 tracking-tighter cursor-pointer" onclick="showPage('home')">ANIFLUX</h1>
+            <div class="hidden md:flex gap-6 text-sm font-medium">
+                <span class="hover:text-gray-300 cursor-pointer" onclick="showPage('home')">Home</span>
+                <span class="hover:text-gray-300 cursor-pointer" onclick="alert('Browse feature coming soon!')">Browse</span>
+            </div>
+        </div>
+        <div class="flex items-center gap-5">
+            <div class="relative group">
+                <input type="text" id="searchInput" placeholder="Titles, genres..." class="bg-black border border-gray-700 px-3 py-1 text-sm focus:outline-none focus:border-white transition-all w-32 md:w-64">
+                <i class="fa fa-search absolute right-3 top-2 text-gray-400"></i>
+            </div>
+            <button onclick="checkAdminAccess()" class="bg-red-600 px-4 py-1 rounded text-sm font-bold">Admin</button>
+        </div>
+    </nav>
+
+    <div id="main-content" class="pt-20 min-h-screen">
+        </div>
+
+    <footer class="p-10 text-center text-gray-600 border-t border-gray-800 mt-20">
+        <p>&copy; 2024 ANIFLUX. Built for streaming enthusiasts.</p>
+        <button onclick="showPage('admin-login')" class="mt-2 text-xs uppercase tracking-widest hover:text-white">Admin Dashboard</button>
+    </footer>
+
+    <script id="home-template" type="text/template">
+        <div class="px-4 md:px-12">
+            <div class="relative h-[60vh] rounded-xl overflow-hidden mb-10 group">
+                <img src="https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=1920" class="w-full h-full object-cover">
+                <div class="absolute inset-0 netflix-gradient flex flex-col justify-end p-8">
+                    <h2 class="text-5xl font-bold mb-4">Discover Your Next Obsession</h2>
+                    <p class="max-w-2xl text-lg text-gray-200 mb-6">Stream the latest seasonal hits and all-time classics in high definition.</p>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+                <span class="w-1 h-6 bg-red-600"></span> Recent Additions
+            </h3>
+            <div id="anime-grid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                </div>
+        </div>
+    </script>
+
+    <script id="watch-template" type="text/template">
+        <div class="px-4 md:px-12 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                <div class="lg:col-span-3">
+                    <div class="aspect-video bg-black rounded-lg overflow-hidden border border-gray-800 shadow-2xl">
+                        <iframe id="videoPlayer" src="" class="w-full h-full" allowfullscreen frameborder="0"></iframe>
+                    </div>
+                    <div class="mt-6">
+                        <h2 id="watch-title" class="text-3xl font-bold text-white"></h2>
+                        <p id="watch-desc" class="text-gray-400 mt-4 leading-relaxed"></p>
+                    </div>
+                </div>
+                <div class="lg:col-span-1">
+                    <div class="bg-zinc-900 rounded-lg p-4 border border-gray-800">
+                        <h4 class="font-bold mb-4 uppercase text-xs tracking-widest text-gray-500">Episodes</h4>
+                        <div id="episode-list" class="space-y-2 max-h-[500px] overflow-y-auto custom-scroll">
+                            </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script id="admin-login-template" type="text/template">
+        <div class="flex items-center justify-center min-h-[70vh]">
+            <div class="bg-zinc-900 p-8 rounded-lg border border-gray-800 w-full max-w-md">
+                <h2 class="text-2xl font-bold mb-6">Admin Login</h2>
+                <div class="space-y-4">
+                    <input type="text" id="admUser" placeholder="Username" class="w-full bg-zinc-800 border border-gray-700 p-3 rounded focus:outline-none focus:border-red-600">
+                    <input type="password" id="admPass" placeholder="Password" class="w-full bg-zinc-800 border border-gray-700 p-3 rounded focus:outline-none focus:border-red-600">
+                    <button onclick="handleLogin()" class="w-full bg-red-600 py-3 font-bold rounded hover:bg-red-700">Access Dashboard</button>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script id="admin-dash-template" type="text/template">
+        <div class="px-4 md:px-12 py-6">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-3xl font-bold">Content Management</h2>
+                <button onclick="logout()" class="text-sm text-gray-400 underline">Logout</button>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-1 bg-zinc-900 p-6 rounded-lg border border-gray-800 h-fit">
+                    <h3 class="text-lg font-bold mb-4">Add / Edit Anime</h3>
+                    <div class="space-y-4">
+                        <input type="hidden" id="editId">
+                        <input type="text" id="aniTitle" placeholder="Anime Title" class="w-full bg-zinc-800 border border-gray-700 p-2 rounded">
+                        <input type="text" id="aniImg" placeholder="Image URL (Poster)" class="w-full bg-zinc-800 border border-gray-700 p-2 rounded">
+                        <textarea id="aniDesc" placeholder="Description" class="w-full bg-zinc-800 border border-gray-700 p-2 rounded h-24"></textarea>
+                        
+                        <div class="border-t border-gray-800 pt-4">
+                            <h4 class="text-sm font-bold mb-2">Episode Entry</h4>
+                            <div class="flex gap-2 mb-2">
+                                <input type="number" id="epNum" placeholder="No." class="w-16 bg-zinc-800 border border-gray-700 p-2 rounded">
+                                <input type="text" id="epLink" placeholder="GDrive Embed Link" class="flex-1 bg-zinc-800 border border-gray-700 p-2 rounded">
+                                <button onclick="addEpisodeToList()" class="bg-blue-600 px-3 rounded"><i class="fa fa-plus"></i></button>
+                            </div>
+                            <div id="temp-episodes" class="text-xs space-y-1 mb-4 text-gray-400"></div>
+                        </div>
+
+                        <button onclick="saveAnime()" class="w-full bg-green-600 py-2 font-bold rounded">Save Anime to Library</button>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-2">
+                    <div class="bg-zinc-900 rounded-lg overflow-hidden border border-gray-800">
+                        <table class="w-full text-left">
+                            <thead class="bg-zinc-800 text-xs uppercase text-gray-400">
+                                <tr>
+                                    <th class="p-4">Anime</th>
+                                    <th class="p-4">Episodes</th>
+                                    <th class="p-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-list-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script>
+        // APP LOGIC
+        let animeData = JSON.parse(localStorage.getItem('aniflux_data')) || [];
+        let tempEpisodes = [];
+        let isAdmin = sessionStorage.getItem('aniflux_admin') === 'true';
+
+        // Initial Data if empty
+        if(animeData.length === 0) {
+            animeData = [{
+                id: Date.now(),
+                title: "Example: Suzume",
+                img: "https://m.media-amazon.com/images/M/MV5BNGVkNDc3NjUtZDRiZC00YTdmLWJmNmUtYjU1OTI4N2VlZTRlXkEyXkFqcGdeQXVyMTEzMTI1Mjk3._V1_.jpg",
+                desc: "A modern action adventure road story where a 17-year-old girl named Suzume helps a mysterious young man close doors from the other side that are releasing disasters all over Japan.",
+                episodes: [{num: 1, link: "https://www.youtube.com/embed/dQw4w9WgXcQ"}]
+            }];
+            localStorage.setItem('aniflux_data', JSON.stringify(animeData));
+        }
+
+        function showPage(page, params = null) {
+            const container = document.getElementById('main-content');
+            const template = document.getElementById(`${page}-template`).innerHTML;
+            container.innerHTML = template;
+
+            if(page === 'home') renderHome();
+            if(page === 'watch') renderWatch(params);
+            if(page === 'admin-dash') renderAdminDash();
+            
+            window.scrollTo(0,0);
+        }
+
+        // FRONTEND RENDERING
+        function renderHome() {
+            const grid = document.getElementById('anime-grid');
+            grid.innerHTML = animeData.map(item => `
+                <div class="anime-card cursor-pointer group" onclick="showPage('watch', ${item.id})">
+                    <div class="relative aspect-[2/3] overflow-hidden rounded-md mb-2 shadow-lg border border-gray-800">
+                        <img src="${item.img}" class="w-full h-full object-cover transition-transform duration-300">
+                        <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                            <i class="fa fa-play text-4xl"></i>
+                        </div>
+                    </div>
+                    <h4 class="font-medium text-sm line-clamp-1 group-hover:text-red-500">${item.title}</h4>
+                    <p class="text-xs text-gray-500">${item.episodes.length} Episodes</p>
+                </div>
+            `).join('');
+        }
+
+        function renderWatch(id) {
+            const anime = animeData.find(a => a.id == id);
+            if(!anime) return showPage('home');
+
+            document.getElementById('watch-title').innerText = anime.title;
+            document.getElementById('watch-desc').innerText = anime.desc;
+            
+            const epList = document.getElementById('episode-list');
+            epList.innerHTML = anime.episodes.sort((a,b) => a.num - b.num).map(ep => `
+                <button onclick="playEpisode('${ep.link}', this)" class="ep-btn w-full text-left p-3 rounded bg-zinc-800 hover:bg-zinc-700 transition flex justify-between items-center group">
+                    <span>Episode ${ep.num}</span>
+                    <i class="fa fa-play-circle opacity-0 group-hover:opacity-100 text-red-600"></i>
+                </button>
+            `).join('');
+
+            // Play first episode by default
+            if(anime.episodes.length > 0) {
+                playEpisode(anime.episodes[0].link, document.querySelector('.ep-btn'));
+            }
+        }
+
+        function playEpisode(link, btn) {
+            document.getElementById('videoPlayer').src = link;
+            document.querySelectorAll('.ep-btn').forEach(b => b.classList.remove('border-l-4', 'border-red-600', 'bg-zinc-700'));
+            btn.classList.add('border-l-4', 'border-red-600', 'bg-zinc-700');
+        }
+
+        // ADMIN LOGIC
+        function checkAdminAccess() {
+            if(isAdmin) showPage('admin-dash');
+            else showPage('admin-login');
+        }
+
+        function handleLogin() {
+            const u = document.getElementById('admUser').value;
+            const p = document.getElementById('admPass').value;
+            if(u === 'admin' && p === 'admin123') {
+                isAdmin = true;
+                sessionStorage.setItem('aniflux_admin', 'true');
+                showPage('admin-dash');
+            } else {
+                alert('Invalid Credentials');
+            }
+        }
+
+        function logout() {
+            isAdmin = false;
+            sessionStorage.removeItem('aniflux_admin');
+            showPage('home');
+        }
+
+        function addEpisodeToList() {
+            const num = document.getElementById('epNum').value;
+            const link = document.getElementById('epLink').value;
+            if(!num || !link) return alert('Enter episode details');
+            
+            tempEpisodes.push({num: parseInt(num), link: link});
+            document.getElementById('epNum').value = '';
+            document.getElementById('epLink').value = '';
+            renderTempEpisodes();
+        }
+
+        function renderTempEpisodes() {
+            const cont = document.getElementById('temp-episodes');
+            cont.innerHTML = tempEpisodes.map((e, idx) => `
+                <div class="flex justify-between bg-black p-1 px-2 rounded">
+                    <span>Ep ${e.num}</span>
+                    <button onclick="tempEpisodes.splice(${idx},1); renderTempEpisodes()" class="text-red-500">×</button>
+                </div>
+            `).join('');
+        }
+
+        function saveAnime() {
+            const title = document.getElementById('aniTitle').value;
+            const img = document.getElementById('aniImg').value;
+            const desc = document.getElementById('aniDesc').value;
+            const editId = document.getElementById('editId').value;
+
+            if(!title || !img || tempEpisodes.length === 0) return alert('Missing info or episodes');
+
+            if(editId) {
+                const idx = animeData.findIndex(a => a.id == editId);
+                animeData[idx] = { id: parseInt(editId), title, img, desc, episodes: tempEpisodes };
+            } else {
+                animeData.push({ id: Date.now(), title, img, desc, episodes: tempEpisodes });
+            }
+
+            localStorage.setItem('aniflux_data', JSON.stringify(animeData));
+            tempEpisodes = [];
+            showPage('admin-dash');
+        }
+
+        function editAnime(id) {
+            const anime = animeData.find(a => a.id == id);
+            document.getElementById('aniTitle').value = anime.title;
+            document.getElementById('aniImg').value = anime.img;
+            document.getElementById('aniDesc').value = anime.desc;
+            document.getElementById('editId').value = anime.id;
+            tempEpisodes = [...anime.episodes];
+            renderTempEpisodes();
+        }
+
+        function deleteAnime(id) {
+            if(confirm('Delete this anime?')) {
+                animeData = animeData.filter(a => a.id != id);
+                localStorage.setItem('aniflux_data', JSON.stringify(animeData));
+                renderAdminDash();
+            }
+        }
+
+        function renderAdminDash() {
+            const body = document.getElementById('admin-list-body');
+            body.innerHTML = animeData.map(a => `
+                <tr class="border-t border-gray-800 hover:bg-white/5">
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${a.img}" class="w-10 h-14 object-cover rounded">
+                        <span class="font-bold">${a.title}</span>
+                    </td>
+                    <td class="p-4 text-gray-400">${a.episodes.length} Eps</td>
+                    <td class="p-4">
+                        <button onclick="editAnime(${a.id})" class="text-blue-500 mr-3 hover:text-white"><i class="fa fa-edit"></i></button>
+                        <button onclick="deleteAnime(${a.id})" class="text-red-500 hover:text-white"><i class="fa fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        // Search Logic
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const val = e.target.value.toLowerCase();
+            const filtered = animeData.filter(a => a.title.toLowerCase().includes(val));
+            const grid = document.getElementById('anime-grid');
+            if(grid) {
+                // If we are on home page, update grid immediately
+                grid.innerHTML = filtered.map(item => `
+                    <div class="anime-card cursor-pointer group" onclick="showPage('watch', ${item.id})">
+                        <div class="relative aspect-[2/3] overflow-hidden rounded-md mb-2 shadow-lg border border-gray-800">
+                            <img src="${item.img}" class="w-full h-full object-cover transition-transform duration-300">
+                        </div>
+                        <h4 class="font-medium text-sm line-clamp-1 group-hover:text-red-500">${item.title}</h4>
+                    </div>
+                `).join('');
+            }
+        });
+
+        // Init
+        showPage('home');
+
+        window.onscroll = function() {
+            const nav = document.getElementById('navbar');
+            if (window.pageYOffset > 50) nav.classList.add('bg-black');
+            else nav.classList.remove('bg-black');
+        };
+    </script>
+</body>
+                  </html>
+                  
